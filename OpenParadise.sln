@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35004.147
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenParadise", "OpenParadise\OpenParadise.csproj", "{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|ARM32 = Debug|ARM32
+		Debug|ARM64 = Debug|ARM64
+		Release|Any CPU = Release|Any CPU
+		Release|ARM32 = Release|ARM32
+		Release|ARM64 = Release|ARM64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Debug|ARM32.ActiveCfg = Debug|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Release|ARM32.ActiveCfg = Release|Any CPU
+		{CFC0699A-84C6-4684-BEC1-9FA247CCDF1C}.Release|ARM64.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7B49F45E-CD66-4E29-BD0C-FED4BA2F25DD}
+	EndGlobalSection
+EndGlobal
