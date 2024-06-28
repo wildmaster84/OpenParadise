@@ -17,9 +17,6 @@
         private Socket _serverSocket;
         private readonly int _port;
         private byte[] _buffer;
-        private string gamertag = "";
-        private string xuid = "";
-        private byte[] maddr;
         public SocketServer(int port)
         {
             _port = port;
@@ -54,6 +51,10 @@
         private async Task HandleClient(Socket clientSocket)
         {
             using var cancellationTokenSource = new CancellationTokenSource();
+            string gamertag = "";
+            string xuid = "";
+            byte[] maddr = [];
+            string lastType = "0";
             try
             {
                 while (true)
@@ -89,6 +90,13 @@
                     actions.Add("sdta");
                     actions.Add("gpsc");
                     actions.Add("hchk");
+                    actions.Add("gset");
+                    actions.Add("rent");
+                    actions.Add("rrlc");
+                    actions.Add("rrgt");
+                    actions.Add("gdel");
+                    actions.Add("fbst");
+                    actions.Add("opup");
 
                     // Process received data
                     string message = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, bytesRead);
@@ -118,7 +126,7 @@
                             }
                             case "addr": {
                                 // Probably shouldn't be triggered here.
-                                SendHeartbeat(clientSocket, TimeSpan.FromSeconds(15), cancellationTokenSource.Token);
+                                SendHeartbeat(clientSocket, TimeSpan.FromSeconds(17), cancellationTokenSource.Token);
                                 break;
                             }
                             case "skey":
@@ -136,7 +144,7 @@
                                     inGame = inGame + int.Parse(message.Split("INGAME=")[1].Split("\x0a")[0]);
                                     // Game returns msgType P from either here or 100.
                                     // Which is confusing.
-                                    clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\x92GAMES=0\tMYGAME=0\tUSERS=0\tROOMS=0\tUSERSETS=0\tMESGS=1\tMESGTYPES=P\tASYNC=0\tCTRL=0\tSTATS=0\tSLOTS=280\tINGAME={inGame}\tDP=XBL2/Burnout-Jan2008/mod\0"));
+                                    clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\x92GAMES=0\tMYGAME=0\tUSERS=0\tROOMS=0\tUSERSETS=0\tMESGS=1\tMESGTYPES={lastType}\tASYNC=0\tCTRL=0\tSTATS=0\tSLOTS=280\tINGAME={inGame}\tDP=XBL2/Burnout-Jan2008/mod\0"));
                                 }
                                 else
                                 {
@@ -152,8 +160,10 @@
                                         string stats = message.Split(" ")[6].Split("STATS=")[1].Split(" ")[0];
                                         string ranks = message.Split(" ")[7].Split("RANKS=")[1].Split(" ")[0];
                                         string usersets = message.Split(" ")[8].Split("USERSETS=")[1].Split("\0")[0];
-                                        clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\xE5GAMES=0\tMYGAME=\"{mygame} GAMES={games} ROOMS={rooms} USERS={users} MESGS={mesgs} MESGTYPES=100728964 STATS={stats} RANKS={ranks} USERSETS={usersets}\"\tUSERS=0\tROOMS=0\tUSERSETS=0\tMESGS=0\tMESGTYPES=0\tASYNC=0\tCTRL=0\tSTATS=0\tSLOTS=280\tINGAME=0\tDP=XBL2/Burnout-Jan2008/mod\0"));
-                                    }
+
+                                        clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\xE5GAMES=0\tMYGAME=\"{mygame} GAMES={games} ROOMS={rooms} USERS={users} MESGS={mesgs} MESGTYPES=100728964 STATS={stats} RANKS={ranks} USERSETS={usersets}\"\tUSERS=0\tROOMS=0\tUSERSETS=0\tMESGS=0\tMESGTYPES={lastType}\tASYNC=0\tCTRL=0\tSTATS=0\tSLOTS=280\tINGAME=0\tDP=XBL2/Burnout-Jan2008/mod\0"));
+                                        
+;                                    }
                                     // Login?
                                     else if (msgType == "GPY")
                                     {
@@ -165,11 +175,19 @@
                                         string rooms = message.Split("ROOMS=")[1].Split("\x0a")[0];
                                         string usersets = message.Split("USERSETS=")[1].Split("\x0a")[0];
                                         string stats = message.Split("STATS=")[1].Split("\x0a")[0];
-                                        clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\x94GAMES=0\tMYGAME={mygame}\tUSERS={users}\tROOMS={rooms}\tUSERSETS={usersets}\tMESGS={mesgs}\tMESGTYPES=GPY\tASYNC=0\tCTRL=0\tSTATS={stats}\tSLOTS=280\tINGAME={inGame}\tDP=XBL2/Burnout-Jan2008/mod\0"));
+
+                                        // We ONLY chenge lastType before being called if its still 0
+                                        if (lastType == "0") lastType = "GPY";
+
+                                        clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\x94GAMES=0\tMYGAME={mygame}\tUSERS={users}\tROOMS={rooms}\tUSERSETS={usersets}\tMESGS={mesgs}\tMESGTYPES={lastType}\tASYNC=0\tCTRL=0\tSTATS={stats}\tSLOTS=280\tINGAME={inGame}\tDP=XBL2/Burnout-Jan2008/mod\0"));
+                                        lastType = "GPY";
                                     }
                                     // Ingame?
                                     else if (msgType == "P")
                                     {
+                                        // We ONLY chenge lastType before being called if its still GPY
+                                        if (lastType == "GPY") lastType = "P";
+
                                         string games = message.Split("GAMES=")[1].Split("\x0a")[0];
                                         string myGames = message.Split("MYGAME=")[1].Split("\x0a")[0];
                                         string users = message.Split("USERS=")[1].Split("\x0a")[0];
@@ -178,8 +196,8 @@
                                         string usersets = message.Split("USERSETS=")[1].Split("\x0a")[0];
                                         inGame = int.Parse(message.Split("INGAME=")[1].Split("\x0a")[0]);
                                         string stats = message.Split("STATS=")[1].Split("\x0a")[0];
-                                        clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\x92GAMES=0\tMYGAME={myGames}\tUSERS={users}\tROOMS={rooms}\tUSERSETS={usersets}\tMESGS={mesgs}\tMESGTYPES=P\tASYNC=0\tCTRL=0\tSTATS={stats}\tSLOTS=280\tINGAME={inGame}\tDP=XBL2/Burnout-Jan2008/mod\0"));
-
+                                        clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"sele\0\0\0\0\0\0\0\x92GAMES=0\tMYGAME={myGames}\tUSERS={users}\tROOMS={rooms}\tUSERSETS={usersets}\tMESGS={mesgs}\tMESGTYPES={lastType}\tASYNC=0\tCTRL=0\tSTATS={stats}\tSLOTS=280\tINGAME={inGame}\tDP=XBL2/Burnout-Jan2008/mod\0"));
+                                        lastType = "P";
                                     }
                                     else
                                     {
@@ -237,12 +255,51 @@
                             {
                                 string formattedTime = DateTime.Now.ToString("yyyy.M.d-HH:m:ss");
                                 clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("gpsc\0\0\0\0\0\0\0\x0D\0"));
-                                clientSocket.Send(mergeBytes(Encoding.GetEncoding("ISO-8859-1").GetBytes($"+who\0\0\0\0\0\0\0\xF0I=947\tN={gamertag}\tM={gamertag}\tF=U\tA={clientIp}\tP=1\tS=,,\tG=73\tAT=\tCL=511\tLV=1049601\tMD=0\tLA={clientIp}\tHW=0\tRP=0\tMA="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes($"\tLO=enGB\tX=\tUS=0\tPRES=1\tVER=7\tC=,,,,,,,,\0+mgm\0\0\0\0\0\0\x02\xCDIDENT=73\tWHEN={formattedTime}\tNAME={gamertag}\tHOST=@brobot948\tROOM=0\tMAXSIZE=9\tMINSIZE=2\tCOUNT=2\tPRIV=0\tCUSTFLAGS=413345024\tSYSFLAGS=64\tEVID=0\tEVGID=0\tNUMPART=1\tSEED=73\tGPSHOST={gamertag}\tGPSREGION=0\tGAMEMODE=0\tGAMEPORT=3074\tVOIPPORT=0\tWHENC={formattedTime}\tSESS=None\tPLATPARAMS=None\tPARTSIZE0=9\tPARAMS=,,,1fc00b80,656e4742\tPARTPARAMS0=\tOPPO0=@brobot948\tOPPART0=0\tOPFLAG0==0\tPRES0=0\tOPID0=948\tADDR0={Startup.ServerIP}\tLADDR0=127.0.0.3\tMADDR0=\tOPPARAM0=PUSMC1A3????,,c0-1,,,a,,,3a54e32a\tOPPO1={gamertag}\tOPPART1=0\tOPFLAG1=413345024\tPRES1=0\tOPID1=947\tADDR1={clientIp}\tLADDR1={clientIp}\tMADDR1="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes("\tOPPARAM1=PUSMC1A3????,,c00,,,a,,,3a54e32a\0")));
+                                await clientSocket.SendAsync(mergeBytes(Encoding.GetEncoding("ISO-8859-1").GetBytes($"+who\0\0\0\0\0\0\0\xF0I=947\tN={gamertag}\tM={gamertag}\tF=U\tA={clientIp}\tP=1\tS=,,\tG=73\tAT=\tCL=511\tLV=1049601\tMD=0\tLA={clientIp}\tHW=0\tRP=0\tMA="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes($"\tLO=enGB\tX=\tUS=0\tPRES=1\tVER=7\tC=,,,,,,,,\0+mgm\0\0\0\0\0\0\x02\xCDIDENT=73\tWHEN={formattedTime}\tNAME={gamertag}\tHOST=@brobot948\tROOM=0\tMAXSIZE=9\tMINSIZE=2\tCOUNT=2\tPRIV=0\tCUSTFLAGS=413345024\tSYSFLAGS=64\tEVID=0\tEVGID=0\tNUMPART=1\tSEED=73\tGPSHOST={gamertag}\tGPSREGION=0\tGAMEMODE=0\tGAMEPORT=3074\tVOIPPORT=0\tWHENC={formattedTime}\tSESS=None\tPLATPARAMS=None\tPARTSIZE0=9\tPARAMS=,,,1fc00b80,656e4742\tPARTPARAMS0=\tOPPO0=@brobot948\tOPPART0=0\tOPFLAG0==0\tPRES0=0\tOPID0=948\tADDR0={Startup.ServerIP}\tLADDR0=127.0.0.3\tMADDR0=\tOPPARAM0=PUSMC1A3????,,c0-1,,,a,,,3a54e32a\tOPPO1={gamertag}\tOPPART1=0\tOPFLAG1=413345024\tPRES1=0\tOPID1=947\tADDR1={clientIp}\tLADDR1={clientIp}\tMADDR1="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes("\tOPPARAM1=PUSMC1A3????,,c00,,,a,,,3a54e32a\0")));
                                 break;
                             }
                             case "hchk":
                             {
-                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("\0\0\0\0\0\0\0\x0D\0"));
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("hchk\0\0\0\0\0\0\0\x0D\0"));
+                                clientSocket.Send(mergeBytes(Encoding.GetEncoding("ISO-8859-1").GetBytes($"+who\0\0\0\0\0\0\0\xF0I=947\tN={gamertag}\tM={gamertag}\tF=U\tA={clientIp}\tP=1\tS=,,\tG=73\tAT=\tCL=511\tLV=1049601\tMD=0\tLA={clientIp}\tHW=0\tRP=0\tMA="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes($"\tLO=enGB\tX=\tUS=0\tPRES=1\tVER=7\tC=,,,,,,,,\0")));
+                                break;
+                            }
+                            case "gset":
+                            {
+                                string formattedTime = DateTime.Now.ToString("yyyy.M.d-HH:m:ss");
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes($"gset\0\0\0\0\0\0\x03\x17IDENT=73\tWHEN={formattedTime}\tNAME={gamertag}\tHOST=@brobot948\tROOM=0\tMAXSIZE=9\tMINSIZE=2\tCOUNT=2\tPRIV=0\tCUSTFLAGS=413345024\tSYSFLAGS=64\tEVID=0\tEVGID=0\tNUMPART=1\tSEED=73\tGPSHOST={gamertag}\tGPSREGION=0\tGAMEMODE=0\tGAMEPORT=3074\tVOIPPORT=0\tWHENC={formattedTime}\tSESS=$\xc4\xdc\xd0\xa7\xc9\xc8\x8b\xfa\x94\x99\x82\x85\xa0\x84\xd2\x8e\x86\xc5\x80\x90\x82\xa9\x87\xc3\xa2\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x82\x88\x98\xc0\xa0\x81\x83\x87\x90\xa4\xd0\xb0\x81\xc3\x86\x8e\x9e\x80\xae\x81\xdc\x88\xa5\xe4\xde\xb0\xb6\x80\tPLATPRAMS=\xfb\xf3\xe3\xf3\xb6\xbc\xcd\xf1\xab\x80\tPARTSIZE0=9\tPARAMS=,,,1fc00b80,656e4742\tPARTPARAMS0=\tOPPO0=@brobot948\tOPPART0=0\tOPFLAG0=0\tPRES0=0\tOPID0=948\tADDR0={Startup.ServerIP}\tLADDR0=127.0.0.3\tMADDR0=\tOPPARAM0=PUSMC1A3????,,c0-1,,,a,,,3a54e32a\tOPPO1={gamertag}\tOPPART1=0\tOPFLAG1=413345024\tPRES1=0\tOPID1=947\tADDR1={clientIp}\tLADDR1={clientIp}\tMADDR1={maddr}\tOPPARAM1=PUSMC1A3????,,c00,,,a,,,3a54e32a\t"));
+                                
+                                await clientSocket.SendAsync(mergeBytes(Encoding.GetEncoding("ISO-8859-1").GetBytes($"+mgm\0\0\0\0\0\0\x03\x17IDENT=73\tWHEN={formattedTime}\tNAME={gamertag}\tHOST=@brobot948\tROOM=0\tMAXSIZE=9\tMINSIZE=2\tCOUNT=2\tPRIV=0\tCUSTFLAGS=413345024\tSYSFLAGS=64\tEVID=0\tEVGID=0\tNUMPART=1\tSEED=73\tGPSHOST={gamertag}\tGPSREGION=0\tGAMEMODE=0\tGAMEPORT=3074\tVOIPPORT=0\tWHENC={formattedTime}\tSESS=$\xc4\xdc\xd0\xa7\xc9\xc8\x8b\xfa\x94\x99\x82\x85\xa0\x84\xd2\x8e\x86\xc5\x80\x90\x82\xa9\x87\xc3\xa2\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x82\x88\x98\xc0\xa0\x81\x83\x87\x90\xa4\xd0\xb0\x81\xc3\x86\x8e\x9e\x80\xae\x81\xdc\x88\xa5\xe4\xde\xb0\xb6\x80\tPLATPRAMS=\xfb\xf3\xe3\xf3\xb6\xbc\xcd\xf1\xab\x80\tPLATPARAMS=None\tPARTSIZE0=9\tPARAMS=,,,1fc00b80,656e4742\tPARTPARAMS0=\tOPPO0=@brobot948\tOPPART0=0\tOPFLAG0==0\tPRES0=0\tOPID0=948\tADDR0={Startup.ServerIP}\tLADDR0=127.0.0.3\tMADDR0=\tOPPARAM0=PUSMC1A3????,,c0-1,,,a,,,3a54e32a\tOPPO1={gamertag}\tOPPART1=0\tOPFLAG1=413345024\tPRES1=0\tOPID1=947\tADDR1={clientIp}\tLADDR1={clientIp}\tMADDR1="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes("\tOPPARAM1=PUSMC1A3????,,c00,,,a,,,3a54e32a\0")));
+                                break;
+                            }
+                            case "rent":
+                            {
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("rent\0\0\0\0\0\0\0\"$CALLUSER=947\tGFIDS=0\0"));
+                                break;
+                            }
+                            case "rrlc":
+                            {
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("rrlciper\0\0\0\x0D\0"));
+                                break;
+                            }
+                            case "rrgt":
+                            {
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("rrgtiper\0\0\0\x0D\0"));
+                                break;
+                            }
+                            case "gdel":
+                            {
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("gdel\0\0\0\0\0\0\0\x0D\0"));
+                                await clientSocket.SendAsync(mergeBytes(Encoding.GetEncoding("ISO-8859-1").GetBytes($"+who\0\0\0\0\0\0\0\xF0I=947\tN={gamertag}\tM={gamertag}\tF=U\tA={clientIp}\tP=1\tS=,,\tG=73\tAT=\tCL=511\tLV=1049601\tMD=0\tLA={clientIp}\tHW=0\tRP=0\tMA="), maddr, Encoding.GetEncoding("ISO-8859-1").GetBytes("\tLO=enGB\tX=\tUS=0\tPRES=1\tVER=7\tC=,,,,,,,,\0+mgm\0\0\0\0\0\0\x02\xCDIDENT=73\0")));
+                                break;
+                            }
+                            case "fbst": {
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("fbst\0\0\0\0\0\0\0\x0D\0"));
+                                break;
+                            }
+                            case "opup":
+                            {
+                                clientSocket.Send(Encoding.GetEncoding("ISO-8859-1").GetBytes("opup\0\0\0\0\0\0\0\x0D\0"));
                                 break;
                             }
                     }
@@ -262,10 +319,10 @@
             {
                 try
                 {
-                    await Task.Delay(interval, cancellationToken);
                     Console.WriteLine($"heartbeat executed at {DateTime.Now}");
                     string formattedTime = DateTime.Now.ToString("yyyy.M.d-HH:mm:ss");
                     socket.Send(Encoding.UTF8.GetBytes($"~png\0\0\0\0\0\0\0#REF={formattedTime}\0"));
+                    await Task.Delay(interval, cancellationToken);
                 }
                 catch (TaskCanceledException)
                 {
@@ -275,6 +332,7 @@
                 {
                     // Handle other exceptions that might occur in your task logic
                     Console.WriteLine($"An error occurred: {ex.Message}");
+                    break;
                 }
             }
         }
