@@ -6,6 +6,7 @@
         public static int ProxyPort = 10134;
         public static String ServerIP = "68.46.244.148";
         public static String version = "v1.0.0";
+        public static bool debug = true;
         public void ConfigureServices(IServiceCollection services)
         {
             // Configure services (dependency injection, MVC, etc.)
