@@ -1,28 +1,33 @@
-﻿namespace OpenParadise.Controllers
+using OpenParadise.Game;
+using OpenParadise.Net;
+
+namespace OpenParadise.Controllers
 {
     public class Startup
     {
-        public static int ServerPort = 10135;
-        public static int ProxyPort = 10134;
-        public static String ServerIP = "68.46.244.148";
-        public static String version = "v1.0.0";
-        public static bool debug = true;
+        private readonly IConfiguration _configuration;
+
+        public Startup(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            // Configure services (dependency injection, MVC, etc.)
         }
 
         public void Configure(IApplicationBuilder app)
         {
-            // Configure middleware (logging, routing, etc.)
+            Config.Load(_configuration);
+            FeslServer.Debug = Config.Debug;
 
-            // Initialize and start the SocketServer
-            var socketServer = new SocketServer(10134); // Replace with your desired port number
-            socketServer.Start();
+            // Main FESL port (the port the game connects to first; @dir
+            // redirects to ServerPort).
+            var fesl = new FeslServer(Config.ServerPort);
+            fesl.Start();
 
-            var socketServer2 = new SocketServer(10135); // Replace with your desired port number
-            socketServer2.Start();
-            Console.WriteLine($"OpenParadise({version}): Running on ports {ProxyPort} and {ServerPort}");
+            Console.WriteLine($"OpenParadise(v2.0.0): FESL server on port {Config.ServerPort} " +
+                $"(advertised IP {Config.ServerIp})");
         }
     }
 }
