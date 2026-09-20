@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>AnyCPU</Platforms>
+	<InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
 </Project>
